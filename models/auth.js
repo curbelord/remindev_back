@@ -45,6 +45,11 @@ export class AuthModel {
         return {id, nick};
     }
 
+    static validateUser = async (nick, email) => {
+        let [data] = await connection.query('SELECT nick, email FROM User WHERE nick = ? OR email = ?;', [nick, email]);
+        return data;
+    }
+
     static generateUniqueUuid = async (column) => {
         let uuid,
             start = true,

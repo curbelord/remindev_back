@@ -5,3 +5,4 @@ import { AuthController } from "../controllers/auth.js";
 export const registerRouter = Router();
 
 registerRouter.post('/', AuthController.register);
+registerRouter.post('/validate', AuthController.validateUser);

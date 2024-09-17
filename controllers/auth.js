@@ -57,6 +57,24 @@ export class AuthController {
         }
     }
 
+    static validateUser = async (req, res) => {
+        let { nick, email } = req.body;
+
+        try {
+            let userData = await AuthModel.validateUser(nick, email);
+
+            if (userData.length > 0){
+                return res.status(400).json({
+                    message: 'Nick or email already in use',
+                    userData: userData
+                });
+            }
+            res.status(200).send('Nick and email are valid');
+        } catch (error) {
+            res.status(500).send('Server error');
+        }
+    }
+
     static generateToken = (userData, accessOrRefreshToken, expirationTime) => {
         const token = jwt.sign(
             {id: userData.id, nick: userData.nick},
