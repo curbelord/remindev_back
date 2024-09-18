@@ -9,6 +9,10 @@ export class AuthController {
         try {
             let userData = AuthModel.login(nick, password);
 
+            if (userData.length == 0){
+                return res.status(400).send('Incorrect nick or password');
+            }
+
             let accessToken = this.generateToken(userData, process.env.JWT_ACCESS_TOKEN_KEY, '1h');
             let refreshToken = this.generateToken(userData, process.env.JWT_REFRESH_TOKEN_KEY, '7d');
 
@@ -24,7 +28,7 @@ export class AuthController {
                 maxAge: 1000 * 7 * 24 * 60 * 60
             }).send({userData, accessToken});
         } catch (error) {
-            res.status(400).send('Login is not possible');
+            res.status(500).send('Server error');
         }
     }
 
@@ -32,11 +36,12 @@ export class AuthController {
         let userReqData = {
             password: req.body.password
         };
+        let userData = [];
 
         userReqData = this.addDataIfFullRegistration(req, userReqData);
 
         try {
-            let userData = await AuthModel.register(userReqData);
+            userData = await AuthModel.register(userReqData);
 
             let accessToken = this.generateToken(userData, process.env.JWT_ACCESS_TOKEN_KEY, '1h');
             let refreshToken = this.generateToken(userData, process.env.JWT_REFRESH_TOKEN_KEY, '7d');
@@ -52,26 +57,34 @@ export class AuthController {
                 sameSite: 'strict',
                 maxAge: 1000 * 7 * 24 * 60 * 60
             }).send({userData, accessToken});
+
         } catch (error) {
-            res.status(400).send('Registration is not possible');
+            if (!userData.hasOwnProperty('id') || !userData.hasOwnProperty('nick')){
+                return res.status(400).send('Registration is not possible');
+            }
+            res.status(500).send('Server error');
         }
     }
 
-    static validateUser = async (req, res) => {
-        let { nick, email } = req.body;
+    static validateNickOrEmail = async (req, res) => {
+        let { columnName, columnData } = req.body;
 
         try {
-            let userData = await AuthModel.validateUser(nick, email);
+            let userData = await AuthModel.validateNickOrEmail(columnName, columnData);
 
             if (userData.length > 0){
-                return res.status(400).json({
-                    message: 'Nick or email already in use',
+                return res.status(409).json({
+                    message: `${columnName} already in use`,
                     userData: userData
                 });
             }
-            res.status(200).send('Nick and email are valid');
+            res.status(200).json({
+                message: `${columnName} is valid`
+            });
         } catch (error) {
-            res.status(500).send('Server error');
+            res.status(500).json({
+                message: 'Server error'
+            });
         }
     }
 

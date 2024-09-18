@@ -45,8 +45,8 @@ export class AuthModel {
         return {id, nick};
     }
 
-    static validateUser = async (nick, email) => {
-        let [data] = await connection.query('SELECT nick, email FROM User WHERE nick = ? OR email = ?;', [nick, email]);
+    static validateNickOrEmail = async (columnName, columnData) => {
+        let [data] = await connection.query(`SELECT ${columnName} FROM User WHERE ${columnName} = ?;`, [columnData]);
         return data;
     }
 
@@ -59,7 +59,7 @@ export class AuthModel {
             uuid = crypto.randomUUID();
             column == "nick" ? uuid = uuid.slice(0, 18) : false;
 
-            let [data] = await connection.query('SELECT ? FROM User WHERE ? = ?;', [column, column, uuid]);
+            let [data] = await connection.query(`SELECT ${column} FROM User WHERE ${column} = ?;`, [uuid]);
 
             if (data.length === 0){
                 start = false;
