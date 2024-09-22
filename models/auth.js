@@ -18,15 +18,24 @@ const connection = await mysql.createConnection(DEFAULT_CONFIG);
 
 
 export class AuthModel {
-    static login = async (nick, password) => {
-        let hashedPassword = await bcrypt.hash(password, process.env.HASH_SALT);
-        let [data] = await connection.query('SELECT id, nick FROM User WHERE nick = ? AND password = ?;', [nick, hashedPassword]);
+    static login = async (incomingNick, password) => {
+        let [data] = await connection.query('SELECT id, nick, password FROM User WHERE nick = ?;', [incomingNick]);
 
-        return data;
+        if (data.length > 0){
+            let isMatch = await bcrypt.compare(password, data[0].password);
+            let {id, nick} = data[0];
+
+            if (isMatch == true) {
+                return {id, nick}
+            };
+        }
+        return [];
     }
 
     static register = async (userData) => {
-        let hashedPassword = await bcrypt.hash(userData.password, 4);
+        const SALT_ROUNDS = parseInt(process.env.HASH_SALT);
+        let hashedPassword = await bcrypt.hash(userData.password, SALT_ROUNDS);
+
         const sql = 'INSERT INTO User (id, name, surname, birthdate, nick, company, occupation, email, password) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
         let values,
             id = await AuthModel.generateUniqueUuid('id'),

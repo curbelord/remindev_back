@@ -7,9 +7,9 @@ export class AuthController {
         let password = req.body.password;
 
         try {
-            let userData = AuthModel.login(nick, password);
+            let userData = await AuthModel.login(nick, password);
 
-            if (userData.length == 0){
+            if (!userData || Array.isArray(userData) && userData.length === 0){
                 return res.status(400).send('Incorrect nick or password');
             }
 
@@ -28,6 +28,7 @@ export class AuthController {
                 maxAge: 1000 * 7 * 24 * 60 * 60
             }).send({userData, accessToken});
         } catch (error) {
+            console.log(error);
             res.status(500).send('Server error');
         }
     }
