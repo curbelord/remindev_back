@@ -1,13 +1,14 @@
 import { AuthModel } from "../models/auth.js"
 import jwt from "jsonwebtoken";
+import { UserSchema } from "../schemas/user.js";
 
 export class AuthController {
     static login = async (req, res) => {
-        let nick = req.body.nick;
-        let password = req.body.password;
-
         try {
-            let userData = await AuthModel.login(nick, password);
+            let inputData = await UserSchema.validatePartialUser(req.body, true);
+            if (!inputData.success) return res.status(400).send('Invalid data');
+
+            let userData = await AuthModel.login(inputData.data.nick, inputData.data.password);
 
             if (!userData || Array.isArray(userData) && userData.length === 0){
                 return res.status(400).send('Incorrect nick or password');
@@ -28,21 +29,24 @@ export class AuthController {
                 maxAge: 1000 * 7 * 24 * 60 * 60
             }).send({userData, accessToken});
         } catch (error) {
-            console.log(error);
             res.status(500).send('Server error');
         }
     }
 
     static register = async (req, res) => {
-        let userReqData = {
-            password: req.body.password
-        };
         let userData = [];
-
-        userReqData = this.addDataIfFullRegistration(req, userReqData);
+        let inputData;
 
         try {
-            userData = await AuthModel.register(userReqData);
+            if (req.body.fullRegistration){
+                inputData = await UserSchema.validateUser(req.body);
+            }else{
+                inputData = await UserSchema.validatePartialUser(req.body, false);
+            }
+            
+            if (!inputData.success) return res.status(400).send('Invalid data');
+
+            userData = await AuthModel.register(inputData.data);
 
             let accessToken = this.generateToken(userData, process.env.JWT_ACCESS_TOKEN_KEY, '1h');
             let refreshToken = this.generateToken(userData, process.env.JWT_REFRESH_TOKEN_KEY, '7d');
@@ -97,21 +101,5 @@ export class AuthController {
         );
 
         return token;
-    }
-
-    static addDataIfFullRegistration = (req, userReqData) => {
-        if (req.body.fullRegistration){
-            userReqData = {
-                ...userReqData,
-                name: req.body.name,
-                surname: req.body.surname,
-                birthdate: req.body.birthdate,
-                nick: req.body.nick,
-                company: req.body.company,
-                occupation: req.body.occupation,
-                email: req.body.email,
-            }
-        }
-        return userReqData;
     }
 }

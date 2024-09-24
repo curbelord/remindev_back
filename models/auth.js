@@ -42,7 +42,7 @@ export class AuthModel {
             nick;
 
         if (userData.hasOwnProperty('nick')){
-            values = [id, userData.name, userData.surname, userData.birthdate, userData.nick, userData.company, userData.occupation, userData.email, hashedPassword];
+            values = [id, userData.name, userData.surname, userData.birthdate, userData.nick, userData.company || null, userData.occupation, userData.email, hashedPassword];
             nick = userData.nick;
         }else{
             nick = await AuthModel.generateUniqueUuid('nick');
